@@ -7,7 +7,7 @@ import {
 // Bốn danh mục mới dùng chung hạ tầng cũ; bản ghi cũ không có category = quán ăn.
 const CATEGORIES = ['restaurant', 'outing', 'snack', 'cafe', 'matcha'];
 const PRICE_TAGS = ['Ăn giàu', 'Ăn vừa túi', 'Ăn nghèo'];
-const STYLE_TAGS = ['Ăn vặt', 'Ăn no', 'Ăn nhậu', 'Buffet'];
+const STYLE_TAGS = ['Ăn nhẹ', 'Ăn no', 'Ăn nhậu', 'Buffet'];
 const categoryOf = value => CATEGORIES.includes(value) ? value : 'restaurant';
 const normalize = value => String(value ?? '').normalize('NFKC').trim()
   .replace(/\s+/g, ' ').toLocaleLowerCase('vi');
