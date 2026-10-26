@@ -537,7 +537,14 @@ function openModal(mode, entry = null) {
   modal.dishes = [...(entry?.dishes || [])];
   $('#entry-form').reset();
   $('#modal-error').hidden = true;
-  $('#restaurant-fields').hidden = mode === 'edit';
+  // Ẩn thông tin cố định khi sửa trang ghi
+  const isEdit = mode === 'edit';
+
+  $('#restaurant-fields').hidden = isEdit;
+
+  // Chỉ bắt buộc nhập tên và quận khi thêm địa điểm mới
+  $('#restaurant-name').required = !isEdit;
+  $('#restaurant-district').required = !isEdit;
   $('#restaurant-static').hidden = mode !== 'edit';
   $('#delete-entry').hidden = mode !== 'edit';
   $('#modal-eyebrow').textContent = mode === 'add' ? 'GHI THÊM MỘT CHỖ' : 'TRANG GHI CỦA BẠN';
