@@ -40,10 +40,13 @@ function personalFields(category, input) {
 }
 
 export async function saveUserProfile(user) {
+  // Hồ sơ dùng cho Khám phá: không đưa email vào dữ liệu công khai.
+  // Ghi đè để xoá cả email đã lưu từ phiên bản cũ khi người dùng đăng nhập.
   await setDoc(doc(db, 'users', user.uid), {
-    displayName: clean(user.displayName) || user.email?.split('@')[0] || 'Người dùng',
-    email: user.email || '', photoURL: user.photoURL || '', updatedAt: serverTimestamp()
-  }, { merge: true });
+    displayName: (clean(user.displayName) || 'Người dùng').slice(0, 60),
+    photoURL: (user.photoURL || '').slice(0, 2048),
+    updatedAt: serverTimestamp()
+  });
 }
 
 export async function getMyEntries(uid) {
