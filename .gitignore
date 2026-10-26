@@ -1,0 +1,27 @@
+# Firebase CLI local cache / debug logs
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firestore-debug.log
+ui-debug.log
+*.log
+
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+*service-account*.json
+*serviceAccount*.json
+
+# Dependencies, editor and OS artifacts
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+__pycache__/
+
+# Local archives / backup copies
+*.zip
+*.bak
+*~

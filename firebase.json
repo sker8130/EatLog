@@ -1,0 +1,15 @@
+{
+  "hosting": {
+    "site": "eatlog-086",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "firestore.rules",
+      "**/.*",
+      "**/node_modules/**",
+      "*.zip",
+      "*.md"
+    ]
+  }
+}

@@ -1,0 +1,36 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /restaurants/{restaurantId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.addedBy == request.auth.uid;
+      allow update: if signedIn()
+                    && resource.data.addedBy == request.auth.uid
+                    && request.resource.data.addedBy == resource.data.addedBy;
+      allow delete: if signedIn() && resource.data.addedBy == request.auth.uid;
+    }
+
+    match /entries/{entryId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    // ID duy nhất cho mỗi cặp user/quán.
+                    && entryId == request.auth.uid + '_' + request.resource.data.restaurantId;
+      allow update: if signedIn()
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId
+                    && request.resource.data.restaurantId == resource.data.restaurantId;
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1c2321">
+  <link rel="icon" href="./assets/favicon.ico" sizes="any">
+  <link rel="icon" href="./assets/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="./assets/apple-touch-icon.png">
+  <title>EatLog — Sổ tay quán ăn</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./auth.js"></script>
+</head>
+<body data-page="auth">
+  <main class="auth-layout">
+    <section class="auth-story" aria-label="Giới thiệu EatLog">
+      <a class="logo" href="./index.html">Eat<span>Log</span><i>.</i></a>
+      <div class="auth-story-copy">
+        <p class="eyebrow">SỔ TAY ĂN CHƠI</p>
+        <h1>Ăn gì cũng được,<br>mà phải ngon.</h1>
+        <p>Lưu lại những quán muốn thử, quán đã ăn, note các kiểu<br>Hoặc ăn theo người khác :))</p>
+      </div>
+      <div class="ticket-decoration" aria-hidden="true">
+        <span class="ticket-small">PHIẾU GHI NHỚ · 001</span>
+        <strong>Chỗ ngon<br>thì lưu lại.</strong>
+        <span class="ticket-dots">••••••••••••••••••••••</span>
+        <small>Nói để lần sau ăn · Là quên luôn :))</small>
+      </div>
+    </section>
+    <section class="auth-panel">
+      <div class="auth-card paper">
+        <p class="eyebrow">CHÀO MỪNG ĐẾN EATLOG</p>
+        <h2 id="auth-title">Mừng bạn trở lại</h2>
+        <p class="auth-subtitle" id="auth-subtitle">Đăng nhập để mở cuốn sổ quán ăn của bạn.</p>
+        <p class="field-error" id="auth-error" role="alert" hidden></p>
+        <form id="auth-form">
+          <div class="form-field" id="name-row" hidden>
+            <label for="display-name">Tên hiển thị</label>
+            <input id="display-name" name="displayName" maxlength="60" autocomplete="nickname" placeholder="Bạn muốn được gọi là gì?">
+          </div>
+          <div class="form-field">
+            <label for="email">Email</label>
+            <input id="email" type="email" required autocomplete="email" placeholder="ban@example.com">
+          </div>
+          <div class="form-field">
+            <label for="password">Mật khẩu</label>
+            <input id="password" type="password" required autocomplete="current-password" placeholder="Ít nhất 6 ký tự">
+          </div>
+          <button id="auth-submit" class="btn btn-primary btn-block" type="submit">Đăng nhập</button>
+        </form>
+        <div class="auth-divider"><span>hoặc</span></div>
+        <button id="google-login" class="btn btn-google btn-block" type="button">
+          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#4285F4" d="M21.35 12.22c0-.72-.06-1.43-.18-2.11H12v4h5.25a4.49 4.49 0 0 1-1.95 2.94v2.44h3.14c1.84-1.69 2.91-4.19 2.91-7.27Z"/><path fill="#34A853" d="M12 21.5c2.63 0 4.84-.87 6.45-2.36l-3.14-2.44c-.87.58-1.98.93-3.31.93-2.54 0-4.68-1.72-5.45-4.02H3.32v2.51A9.74 9.74 0 0 0 12 21.5Z"/><path fill="#FBBC05" d="M6.55 13.61a5.85 5.85 0 0 1 0-3.22V7.88H3.32a9.75 9.75 0 0 0 0 8.24l3.23-2.51Z"/><path fill="#EA4335" d="M12 6.37c1.39 0 2.63.48 3.61 1.41l2.79-2.79A9.45 9.45 0 0 0 12 2.5a9.74 9.74 0 0 0-8.68 5.38l3.23 2.51c.77-2.3 2.91-4.02 5.45-4.02Z"/></svg>
+          Tiếp tục với Google
+        </button>
+        <button id="auth-toggle" class="text-button" type="button">Chưa có tài khoản? Đăng ký</button>
+        <p id="auth-loading" class="auth-loading">Đang kiểm tra phiên đăng nhập…</p>
+      </div>
+      <p class="auth-foot">EatLog · Em ăn gì cũng được.</p>
+    </section>
+  </main>
+</body>
+</html>
