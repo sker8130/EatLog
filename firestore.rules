@@ -5,31 +5,140 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    match /users/{userId} {
-      allow read: if signedIn();
-      allow create, update, delete: if signedIn() && request.auth.uid == userId;
+    function textInRange(value, maxLength) {
+      return value is string && value.size() > 0 && value.size() <= maxLength;
     }
 
-    match /restaurants/{restaurantId} {
+    function validCategory(value) {
+      return value in ['restaurant', 'outing', 'snack', 'cafe', 'matcha'];
+    }
+
+    // Chỉ lưu thông tin cần cho màn hình Khám phá, không công khai email.
+    function validProfile(data) {
+      return data.keys().hasAll(['displayName', 'photoURL', 'updatedAt'])
+        && data.keys().hasOnly(['displayName', 'photoURL', 'updatedAt'])
+        && textInRange(data.displayName, 60)
+        && data.photoURL is string && data.photoURL.size() <= 2048
+        && data.updatedAt == request.time;
+    }
+
+    function validPlace(data, placeId) {
+      return data.keys().hasAll(['name', 'district', 'address', 'category', 'addedBy', 'createdAt'])
+        && data.keys().hasOnly(['name', 'district', 'address', 'category', 'addedBy', 'createdAt'])
+        && textInRange(data.name, 120)
+        && textInRange(data.district, 80)
+        && data.address is string && data.address.size() <= 240
+        && validCategory(data.category)
+        && data.addedBy == request.auth.uid
+        && data.createdAt == request.time
+        && (
+          (data.category == 'restaurant' && placeId.matches('^r_[0-9a-f]{64}$'))
+          || (data.category != 'restaurant' && placeId.matches('^p_(outing|snack|cafe|matcha)_[0-9a-f]{64}$'))
+        );
+    }
+
+    function validFood(data) {
+      return data.status in ['want_to_try', 'eaten']
+        && (data.rating == null || data.rating in ['good', 'ok', 'bad'])
+        && (data.status == 'eaten' || data.rating == null)
+        && data.tags is list && data.tags.size() <= 7
+        // Có thể còn dữ liệu 'Ăn vặt' từ các bản EatLog cũ.
+        && data.tags.hasOnly([
+          'Ăn giàu', 'Ăn vừa túi', 'Ăn nghèo',
+          'Ăn nhẹ', 'Ăn vặt', 'Ăn no', 'Ăn nhậu', 'Buffet'
+        ])
+        && !data.tags.hasAll(['Ăn giàu', 'Ăn vừa túi'])
+        && !data.tags.hasAll(['Ăn giàu', 'Ăn nghèo'])
+        && !data.tags.hasAll(['Ăn vừa túi', 'Ăn nghèo'])
+        && data.dishes is list && data.dishes.size() <= 40;
+    }
+
+    function validPlaceReference(data) {
+      let path = /databases/$(database)/documents/restaurants/$(data.restaurantId);
+      return existsAfter(path)
+        && getAfter(path).data.name == data.restaurantName
+        && getAfter(path).data.district == data.restaurantDistrict
+        && getAfter(path).data.get('category', 'restaurant') == data.restaurantCategory;
+    }
+
+    function validNewEntry(data, entryId) {
+      return data.keys().hasAll([
+          'userId', 'restaurantId', 'restaurantName', 'restaurantDistrict',
+          'restaurantAddress', 'restaurantCategory', 'note', 'addedFrom',
+          'createdAt', 'updatedAt'
+        ])
+        && (
+          (data.restaurantCategory == 'restaurant'
+            && data.keys().hasAll(['status', 'rating', 'tags', 'dishes'])
+            && data.keys().hasOnly([
+              'userId', 'restaurantId', 'restaurantName', 'restaurantDistrict',
+              'restaurantAddress', 'restaurantCategory', 'note', 'addedFrom',
+              'createdAt', 'updatedAt', 'status', 'rating', 'tags', 'dishes'
+            ])
+            && validFood(data))
+          || (data.restaurantCategory != 'restaurant'
+            && data.keys().hasOnly([
+              'userId', 'restaurantId', 'restaurantName', 'restaurantDistrict',
+              'restaurantAddress', 'restaurantCategory', 'note', 'addedFrom',
+              'createdAt', 'updatedAt'
+            ]))
+        )
+        && data.userId == request.auth.uid
+        && data.restaurantId is string && data.restaurantId.size() <= 100
+        && entryId == request.auth.uid + '_' + data.restaurantId
+        && textInRange(data.restaurantName, 120)
+        && textInRange(data.restaurantDistrict, 80)
+        && data.restaurantAddress is string && data.restaurantAddress.size() <= 240
+        && validCategory(data.restaurantCategory)
+        && data.note is string && data.note.size() <= 2000
+        && (
+          data.addedFrom == null
+          || (data.addedFrom is string
+              && data.addedFrom.size() <= 128
+              && data.addedFrom != request.auth.uid)
+        )
+        && data.createdAt == request.time
+        && data.updatedAt == request.time
+        && validPlaceReference(data);
+    }
+
+    function validEntryUpdate(previous, next) {
+      let category = previous.get('restaurantCategory', 'restaurant');
+      let changed = next.diff(previous).affectedKeys();
+      return (
+          (category == 'restaurant'
+            && changed.hasOnly(['status', 'rating', 'tags', 'dishes', 'note', 'updatedAt'])
+            && validFood(next))
+          || (category != 'restaurant'
+            && changed.hasOnly(['note', 'updatedAt']))
+        )
+        && next.note is string && next.note.size() <= 2000
+        && next.updatedAt == request.time;
+    }
+
+    match /users/{userId} {
+      // Khám phá vẫn cần được đọc tên và avatar của người dùng khác.
       allow read: if signedIn();
-      allow create: if signedIn()
-                    && request.resource.data.addedBy == request.auth.uid;
-      allow update: if signedIn()
-                    && resource.data.addedBy == request.auth.uid
-                    && request.resource.data.addedBy == resource.data.addedBy;
-      allow delete: if signedIn() && resource.data.addedBy == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && validProfile(request.resource.data);
+      allow delete: if false;
+    }
+
+    match /restaurants/{placeId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && validPlace(request.resource.data, placeId);
+      // EatLog chưa có chức năng sửa/xóa dữ liệu địa điểm dùng chung.
+      allow update, delete: if false;
     }
 
     match /entries/{entryId} {
+      // Sổ tay công khai giữa các tài khoản đã đăng nhập (chức năng Khám phá).
       allow read: if signedIn();
-      allow create: if signedIn()
-                    && request.resource.data.userId == request.auth.uid
-                    // ID duy nhất cho mỗi cặp user/quán.
-                    && entryId == request.auth.uid + '_' + request.resource.data.restaurantId;
+      allow create: if signedIn() && validNewEntry(request.resource.data, entryId);
       allow update: if signedIn()
-                    && resource.data.userId == request.auth.uid
-                    && request.resource.data.userId == resource.data.userId
-                    && request.resource.data.restaurantId == resource.data.restaurantId;
+        && resource.data.userId == request.auth.uid
+        && validEntryUpdate(resource.data, request.resource.data);
       allow delete: if signedIn() && resource.data.userId == request.auth.uid;
     }
   }
