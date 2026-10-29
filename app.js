@@ -699,26 +699,141 @@ function pickerDraw(entries) {
   }).join('');
   wheel.innerHTML = labels || '<span class="picker-wheel-empty">Chưa có địa điểm</span>';
 }
+// Cùng kiểu dropdown giấy dùng trong các bộ lọc EatLog; select gốc giữ giá trị.
+const PICKER_FIELDS = ['picker-category', 'picker-district', 'picker-status', 'picker-price', 'picker-style'];
+
+function pickerCloseDropdowns(except = null) {
+  document.querySelectorAll('#picker-dialog [data-picker-dropdown].is-open').forEach(dropdown => {
+    if (dropdown !== except) setDistrictDropdownOpen(dropdown, false);
+  });
+}
+function pickerSetupDropdowns() {
+  PICKER_FIELDS.forEach(id => {
+    const select = $('#'+id);
+    if (!select || select.nextElementSibling?.matches('[data-picker-dropdown]')) return;
+    const dropdown = document.createElement('div');
+    dropdown.className = 'district-dropdown picker-dropdown';
+    dropdown.setAttribute('data-district-dropdown', '');
+    dropdown.setAttribute('data-picker-dropdown', '');
+    dropdown.dataset.pickerSelect = id;
+    dropdown.innerHTML = `
+      <button id="${id}-trigger" type="button" class="district-trigger"
+        data-district-trigger data-picker-trigger aria-haspopup="true"
+        aria-expanded="false" aria-controls="${id}-panel"
+        aria-labelledby="${id}-label ${id}-value">
+        <span class="district-value" id="${id}-value" data-district-value></span>
+        <span class="district-chevron" aria-hidden="true">›</span>
+      </button>
+      <div id="${id}-panel" class="district-panel" data-district-panel inert>
+        <ul class="district-list webkit-scrollbar" role="list"></ul>
+      </div>`;
+    select.after(dropdown);
+    select.hidden = true; // Nếu JS không chạy, select gốc vẫn xuất hiện.
+  });
+  pickerSyncDropdowns();
+}
+function pickerSyncDropdowns() {
+  PICKER_FIELDS.forEach(id => {
+    const select = $('#'+id);
+    const dropdown = select?.nextElementSibling;
+    if (!dropdown?.matches('[data-picker-dropdown]')) return;
+    const choice = select.options[select.selectedIndex];
+    dropdown.querySelector('[data-district-value]').textContent = choice?.textContent || '';
+    dropdown.querySelector('.district-list').innerHTML = [...select.options].map(option => {
+      const chosen = option.value === select.value;
+      return `<li class="district-item"><button class="district-option${chosen ? ' is-selected' : ''}"
+        type="button" data-picker-option="${esc(option.value)}" aria-pressed="${chosen}">
+        <span>${esc(option.textContent)}</span>
+        <span class="district-selected-mark" aria-hidden="true">✓</span>
+      </button></li>`;
+    }).join('');
+  });
+}
+function pickerDropdownEvents() {
+  const dialog = $('#picker-dialog');
+  dialog.addEventListener('click', event => {
+    const trigger = event.target.closest('[data-picker-trigger]');
+    if (trigger) {
+      const dropdown = trigger.closest('[data-picker-dropdown]');
+      const open = !dropdown.classList.contains('is-open');
+      pickerCloseDropdowns(dropdown);
+      setDistrictDropdownOpen(dropdown, open);
+      return;
+    }
+    const option = event.target.closest('[data-picker-option]');
+    if (!option) return;
+    const dropdown = option.closest('[data-picker-dropdown]');
+    const select = $('#'+dropdown.dataset.pickerSelect);
+    select.value = option.dataset.pickerOption;
+    setDistrictDropdownOpen(dropdown, false);
+    dropdown.querySelector('[data-picker-trigger]').focus();
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  dialog.addEventListener('keydown', event => {
+    const dropdown = event.target.closest('[data-picker-dropdown]');
+    if (!dropdown) return;
+    const trigger = dropdown.querySelector('[data-picker-trigger]');
+    const options = [...dropdown.querySelectorAll('[data-picker-option]')];
+    if (event.key === 'Escape' && dropdown.classList.contains('is-open')) {
+      event.preventDefault(); event.stopPropagation();
+      setDistrictDropdownOpen(dropdown, false); trigger.focus();
+    } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      pickerCloseDropdowns(dropdown);
+      setDistrictDropdownOpen(dropdown, true);
+      const focused = options.indexOf(document.activeElement);
+      const active = options.findIndex(btn => btn.getAttribute('aria-pressed') === 'true');
+      let next = focused >= 0 ? focused : active;
+      if (event.key === 'Home') next = 0;
+      else if (event.key === 'End') next = options.length - 1;
+      else next = (next + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+      options[next]?.focus();
+    }
+  });
+  document.addEventListener('click', event => {
+    if (!event.target.closest('#picker-dialog [data-picker-dropdown]')) pickerCloseDropdowns();
+  });
+}
 function pickerRefresh() {
   if (picker.spinning) return;
   const category = $('#picker-category').value;
-  const districts = [...new Set(state.mine.filter(e => category === 'all' || categoryOf(e) === category).map(e => e.restaurantDistrict).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  const districts = [...new Set(state.mine
+    .filter(entry => category === 'all' || categoryOf(entry) === category)
+    .map(entry => entry.restaurantDistrict).filter(Boolean))]
+    .sort((a,b) => a.localeCompare(b, 'vi'));
   const select = $('#picker-district');
   const previous = select.value;
-  select.innerHTML = '<option value="">Mọi khu vực</option>' + districts.map(d => '<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+  select.innerHTML = '<option value="">Mọi khu vực</option>' + districts.map(district =>
+    '<option value="' + esc(district) + '">' + esc(district) + '</option>').join('');
   select.value = districts.includes(previous) ? previous : '';
   $('#picker-food-controls').hidden = category !== 'restaurant';
   picker.choices = pickerEligible();
-  $('#picker-count').textContent = picker.choices.length
-    ? picker.choices.length + ' địa điểm phù hợp đang chờ bạn 🎯'
-    : 'Chưa có địa điểm phù hợp. Hãy thử đổi bộ lọc nhé!';
-  $('#picker-spin').disabled = !picker.choices.length;
+
+  const hasChoices = picker.choices.length > 0;
+  const hasSavedPlaces = state.mine.length > 0;
+  $('#picker-empty').hidden = hasChoices;
+  $('#picker-stage').hidden = !hasChoices;
+  $('#picker-spin').hidden = !hasChoices;
+  $('#picker-spin').disabled = !hasChoices;
+  $('#picker-count').hidden = !hasChoices;
+  if (!hasChoices) {
+    $('#picker-empty h3').textContent = hasSavedPlaces
+      ? 'Không có địa điểm nào khớp bộ lọc' : 'Bạn chưa lưu địa điểm nào cả';
+    $('#picker-empty p').textContent = hasSavedPlaces
+      ? 'Thử đổi danh mục, khu vực hoặc tiêu chí để có thêm lựa chọn nhé!'
+      : 'Thêm vài địa điểm yêu thích vào sổ tay, rồi để EatLog chọn giúp bạn nhé!';
+  }
+  $('#picker-count').textContent = picker.choices.length + ' địa điểm phù hợp đang chờ bạn 🎯';
+  $('#picker-spin').textContent = '🎲 Quay ngay!';
   picker.selected = null;
   $('#picker-result').hidden = true;
   $('#picker-wheel').style.transition = 'none';
   picker.rotation = 0;
   $('#picker-wheel').style.transform = 'rotate(0deg)';
-  pickerDraw(picker.choices);
+  if (hasChoices) pickerDraw(picker.choices);
+  else $('#picker-wheel').innerHTML = '';
+  pickerCloseDropdowns();
+  pickerSyncDropdowns();
 }
 function pickerOpen() {
   if (state.loadingMine) { toast('Sổ tay đang tải, vui lòng thử lại.'); return; }
@@ -780,11 +895,13 @@ function pickerSpin() {
   playTap();
 }
 function pickerInit() {
+  pickerSetupDropdowns();
+  pickerDropdownEvents();
   $('#picker-launch').addEventListener('click', pickerOpen);
   $('#picker-close').addEventListener('click', () => { if (!picker.spinning) $('#picker-dialog').close(); });
   $('#picker-dialog').addEventListener('click', e => { if (e.target === $('#picker-dialog') && !picker.spinning) e.target.close(); });
   $('#picker-dialog').addEventListener('cancel', e => { if (picker.spinning) e.preventDefault(); });
-  ['picker-category','picker-district','picker-status','picker-price','picker-style'].forEach(id => {
+  PICKER_FIELDS.forEach(id => {
     $('#'+id).addEventListener('change', pickerRefresh);
   });
   $('#picker-spin').addEventListener('click', pickerSpin);
