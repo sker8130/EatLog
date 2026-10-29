@@ -118,8 +118,9 @@
     </div>
     <div class="picker-body">
       <div class="picker-controls" aria-label="Lọc địa điểm cho vòng quay">
-        <label>Danh mục
-          <select id="picker-category">
+        <div class="picker-filter-field">
+          <span class="picker-filter-label" id="picker-category-label">Danh mục</span>
+          <select id="picker-category" aria-labelledby="picker-category-label">
             <option value="all">Tất cả danh mục</option>
             <option value="restaurant">Quán ăn</option>
             <option value="outing">Đi chơi</option>
@@ -127,39 +128,50 @@
             <option value="cafe">Cafe</option>
             <option value="matcha">Matcha Map</option>
           </select>
-        </label>
-        <label>Khu vực
-          <select id="picker-district"><option value="">Mọi khu vực</option></select>
-        </label>
+        </div>
+        <div class="picker-filter-field">
+          <span class="picker-filter-label" id="picker-district-label">Khu vực</span>
+          <select id="picker-district" aria-labelledby="picker-district-label">
+            <option value="">Mọi khu vực</option>
+          </select>
+        </div>
         <div id="picker-food-controls" class="picker-food-controls" hidden>
-          <label>Trạng thái
-            <select id="picker-status">
+          <div class="picker-filter-field">
+            <span class="picker-filter-label" id="picker-status-label">Trạng thái</span>
+            <select id="picker-status" aria-labelledby="picker-status-label">
               <option value="all">Tất cả</option>
               <option value="want_to_try">Chưa thử</option>
               <option value="eaten">Đã ăn</option>
             </select>
-          </label>
-          <label>Mức chi
-            <select id="picker-price">
+          </div>
+          <div class="picker-filter-field">
+            <span class="picker-filter-label" id="picker-price-label">Mức chi</span>
+            <select id="picker-price" aria-labelledby="picker-price-label">
               <option value="">Tất cả mức chi</option>
               <option value="Ăn giàu">Ăn giàu</option>
               <option value="Ăn vừa túi">Ăn vừa túi</option>
               <option value="Ăn nghèo">Ăn nghèo</option>
             </select>
-          </label>
-          <label>Kiểu ăn
-            <select id="picker-style">
+          </div>
+          <div class="picker-filter-field">
+            <span class="picker-filter-label" id="picker-style-label">Kiểu ăn</span>
+            <select id="picker-style" aria-labelledby="picker-style-label">
               <option value="">Tất cả kiểu ăn</option>
               <option value="Ăn nhẹ">Ăn nhẹ</option>
               <option value="Ăn no">Ăn no</option>
               <option value="Ăn nhậu">Ăn nhậu</option>
               <option value="Buffet">Buffet</option>
             </select>
-          </label>
+          </div>
         </div>
       </div>
       <p id="picker-count" class="picker-count" aria-live="polite">Đang chuẩn bị vòng quay…</p>
-      <div class="picker-stage">
+      <div id="picker-empty" class="picker-empty" hidden>
+        <div class="picker-empty-icon" aria-hidden="true">🗂️</div>
+        <h3>Bạn chưa lưu địa điểm nào cả</h3>
+        <p>Thêm vài địa điểm yêu thích vào sổ tay, rồi để EatLog chọn giúp bạn nhé!</p>
+      </div>
+      <div id="picker-stage" class="picker-stage">
         <div class="picker-pointer" aria-hidden="true"></div>
         <div id="picker-wheel" class="picker-wheel" role="img" aria-label="Vòng quay chọn địa điểm"></div>
         <span class="picker-hub" aria-hidden="true">E.</span>
