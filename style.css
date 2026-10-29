@@ -563,3 +563,18 @@ body { font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; 
  .picker-wheel-label{font-size:9px}
 }
 @media(prefers-reduced-motion:reduce){.picker-wheel{transition:none!important}}
+
+
+/* Picker filters reuse EatLog's paper dropdown, chevrons and scrolling options. */
+.picker-controls .picker-filter-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.picker-controls .picker-filter-label{color:#675d4e;text-transform:uppercase;letter-spacing:.04em;font-size:10px;font-weight:700}
+.picker-controls .picker-filter-field>select:not([hidden]){width:100%;min-height:44px}
+.picker-controls .picker-dropdown{z-index:3}
+.picker-controls .picker-dropdown.is-open{z-index:15}
+.picker-controls .picker-dropdown .district-trigger{min-height:43px}
+.picker-controls .picker-dropdown .district-panel{z-index:20}
+.picker-controls .picker-dropdown .district-list{max-height:210px}
+.picker-empty{margin:8px 0 22px;padding:28px 20px;border:1px dashed #d7c8ae;border-radius:12px;background:#f7f0e2;text-align:center}
+.picker-empty-icon{width:58px;height:58px;margin:0 auto 14px;display:grid;place-items:center;border-radius:50%;background:#efe4cc;font-size:26px}
+.picker-empty h3{margin:0 0 8px;color:var(--ink);font:700 23px/1.2 Fraunces,Georgia,serif}
+.picker-empty p{margin:0 auto;max-width:420px;color:#71695a;font-size:13px;line-height:1.6}
