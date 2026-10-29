@@ -661,7 +661,143 @@ function setAccountMenuOpen(open) {
 
   button.setAttribute("aria-expanded", String(open));
 }
+
+/* ===== HÔM NAY ĐI ĐÂU? — chỉ đọc state.mine, không ghi Firestore ===== */
+const picker = { choices: [], selected: null, rotation: 0, spinning: false, timer: null, lastId: null };
+const pickerColors = ['#e8a93a','#d7e1be','#e7caa0','#a9c6a1','#efdfc4','#c6d5bf','#e5b879','#d9ddca'];
+function pickerEligible() {
+  const category = $('#picker-category').value;
+  const district = $('#picker-district').value;
+  const status = $('#picker-status').value;
+  const price = $('#picker-price').value;
+  const style = $('#picker-style').value;
+  return state.mine.filter(entry => {
+    if (category !== 'all' && categoryOf(entry) !== category) return false;
+    if (district && entry.restaurantDistrict !== district) return false;
+    if (category === 'restaurant') {
+      const tags = Array.isArray(entry.tags) ? entry.tags : [];
+      if (status !== 'all' && entry.status !== status) return false;
+      if (price && !tags.includes(price)) return false;
+      if (style && !tags.includes(style)) return false;
+    }
+    return true;
+  });
+}
+function pickerDraw(entries) {
+  const wheel = $('#picker-wheel');
+  const shown = entries.slice(0, 8);
+  const n = shown.length;
+  const colors = Array.from({length:n}, (_,i) => pickerColors[i % pickerColors.length]);
+  wheel.style.background = n ? 'conic-gradient(' + colors.map((color,i) => color + ' ' + (i*100/n) + '% ' + ((i+1)*100/n) + '%').join(',') + ')' : '#dcd6c8';
+  const labels = shown.map((entry,i) => {
+    const angle = (i+.5)*360/n;
+    const radians = angle*Math.PI/180;
+    const x = 50 + 29*Math.sin(radians);
+    const y = 50 - 29*Math.cos(radians);
+    const label = esc((entry.restaurantName || 'Địa điểm').slice(0,19));
+    return '<span class="picker-wheel-label" style="left:'+x+'%;top:'+y+'%">'+label+'</span>';
+  }).join('');
+  wheel.innerHTML = labels || '<span class="picker-wheel-empty">Chưa có địa điểm</span>';
+}
+function pickerRefresh() {
+  if (picker.spinning) return;
+  const category = $('#picker-category').value;
+  const districts = [...new Set(state.mine.filter(e => category === 'all' || categoryOf(e) === category).map(e => e.restaurantDistrict).filter(Boolean))].sort((a,b) => a.localeCompare(b,'vi'));
+  const select = $('#picker-district');
+  const previous = select.value;
+  select.innerHTML = '<option value="">Mọi khu vực</option>' + districts.map(d => '<option value="'+esc(d)+'">'+esc(d)+'</option>').join('');
+  select.value = districts.includes(previous) ? previous : '';
+  $('#picker-food-controls').hidden = category !== 'restaurant';
+  picker.choices = pickerEligible();
+  $('#picker-count').textContent = picker.choices.length
+    ? picker.choices.length + ' địa điểm phù hợp đang chờ bạn 🎯'
+    : 'Chưa có địa điểm phù hợp. Hãy thử đổi bộ lọc nhé!';
+  $('#picker-spin').disabled = !picker.choices.length;
+  picker.selected = null;
+  $('#picker-result').hidden = true;
+  $('#picker-wheel').style.transition = 'none';
+  picker.rotation = 0;
+  $('#picker-wheel').style.transform = 'rotate(0deg)';
+  pickerDraw(picker.choices);
+}
+function pickerOpen() {
+  if (state.loadingMine) { toast('Sổ tay đang tải, vui lòng thử lại.'); return; }
+  playTap();
+  $('#picker-category').value = 'all';
+  $('#picker-status').value = 'all';
+  $('#picker-price').value = '';
+  $('#picker-style').value = '';
+  $('#picker-district').value = '';
+  pickerRefresh();
+  $('#picker-dialog').showModal();
+}
+function pickerFinish(entry) {
+  picker.spinning = false;
+  picker.selected = entry;
+  picker.lastId = entry.id;
+  $('#picker-spin').disabled = false;
+  $('#picker-spin').textContent = '🎲 Quay lại';
+  $('#picker-result-name').textContent = entry.restaurantName || 'Địa điểm';
+  $('#picker-result-meta').textContent = categoryLabel(categoryOf(entry)) + ' · ' + (entry.restaurantDistrict || 'Chưa có khu vực');
+  const address = [entry.restaurantAddress, entry.restaurantDistrict, entry.restaurantName].filter(Boolean).join(', ');
+  $('#picker-directions').href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(address);
+  $('#picker-result').hidden = false;
+}
+function pickerSpin() {
+  if (picker.spinning || !picker.choices.length) return;
+  const pool = picker.choices.length > 1 ? picker.choices.filter(e => e.id !== picker.lastId) : picker.choices;
+  const entry = pool[Math.floor(Math.random()*pool.length)];
+  // Ngẫu nhiên từ TOÀN BỘ danh sách; thêm ứng viên trúng vào vòng quay 8 ô.
+  const other = picker.choices.filter(e => e.id !== entry.id).sort(() => Math.random()-.5).slice(0,7);
+  const shown = [entry,...other];
+  const count = shown.length;
+  pickerDraw(shown);
+  const index = 0;
+  const segment = 360/count;
+  // CSS gradient bắt đầu từ đỉnh 12 giờ, kim cũng nằm ở đỉnh.
+  const targetAngle = (360 - (index+.5)*segment) % 360;
+  const currentModulo = ((picker.rotation%360)+360)%360;
+  const extra = (targetAngle-currentModulo+360)%360;
+  picker.rotation += 360*5 + extra;
+  const wheel = $('#picker-wheel');
+  wheel.style.transition = 'none';
+  wheel.style.transform = 'rotate(' + (picker.rotation-360*5-extra) + 'deg)';
+  void wheel.offsetWidth;
+  picker.spinning = true;
+  $('#picker-spin').disabled = true;
+  $('#picker-result').hidden = true;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) {
+    picker.rotation = targetAngle;
+    wheel.style.transform = 'rotate('+targetAngle+'deg)';
+    pickerFinish(entry);
+  } else {
+    wheel.style.transition = 'transform 3500ms cubic-bezier(.12,.77,.1,1)';
+    wheel.style.transform = 'rotate('+picker.rotation+'deg)';
+    clearTimeout(picker.timer);
+    picker.timer = setTimeout(() => pickerFinish(entry), 3600);
+  }
+  playTap();
+}
+function pickerInit() {
+  $('#picker-launch').addEventListener('click', pickerOpen);
+  $('#picker-close').addEventListener('click', () => { if (!picker.spinning) $('#picker-dialog').close(); });
+  $('#picker-dialog').addEventListener('click', e => { if (e.target === $('#picker-dialog') && !picker.spinning) e.target.close(); });
+  $('#picker-dialog').addEventListener('cancel', e => { if (picker.spinning) e.preventDefault(); });
+  ['picker-category','picker-district','picker-status','picker-price','picker-style'].forEach(id => {
+    $('#'+id).addEventListener('change', pickerRefresh);
+  });
+  $('#picker-spin').addEventListener('click', pickerSpin);
+  $('#picker-view').addEventListener('click', () => {
+    const entry = picker.selected;
+    if (!entry) return;
+    $('#picker-dialog').close();
+    openModal('edit', entry);
+  });
+}
+
 function bindEvents() {
+  pickerInit();
   setupFormDistrictDropdown();
   wireFilters('mine'); wireFilters('discover');
   ['mine', 'discover'].forEach(view => {
