@@ -76,6 +76,15 @@
   <main class="app-main">
     <section id="mine-view" class="view">
       <div class="section-heading"><div><p class="eyebrow">NHỮNG CHỖ MUỐN NHỚ</p><h1>List của tôi<span class="gold-period">.</span></h1><p>Tìm chỗ ăn chơi nè</p></div></div>
+      <section class="picker-teaser paper" aria-label="Gợi ý địa điểm ngẫu nhiên">
+        <span class="picker-teaser-icon" aria-hidden="true">🎲</span>
+        <div class="picker-teaser-copy">
+          <p class="picker-teaser-eyebrow">KHÔNG BIẾT ĐI ĐÂU?</p>
+          <h2>Hôm nay đi đâu<span class="gold-period">?</span></h2>
+          <p>Để EatLog chọn một địa điểm từ sổ tay của bạn.</p>
+        </div>
+        <button id="picker-launch" class="btn picker-launch" type="button">Quay chọn địa điểm <span aria-hidden="true">↗</span></button>
+      </section>
       <div id="mine-category-tabs" class="category-tabs" aria-label="Chọn danh mục của tôi"></div>
       <div id="mine-status-tabs" class="status-tabs" role="group" aria-label="Trạng thái quán"></div>
       <div id="mine-filters" class="filters paper"></div>
@@ -97,6 +106,76 @@
   </main>
 
   <button id="add-button" class="floating-add" type="button" aria-label="Thêm quán mới" title="Thêm quán">+</button>
+
+  <dialog id="picker-dialog" class="picker-dialog paper" aria-labelledby="picker-title">
+    <div class="picker-heading">
+      <div>
+        <p class="eyebrow">EATLOG PICKER</p>
+        <h2 id="picker-title">Hôm nay đi đâu<span class="gold-period">?</span></h2>
+        <p>Chọn vài tiêu chí, rồi để vòng quay quyết định!</p>
+      </div>
+      <button id="picker-close" class="icon-btn close-btn" type="button" aria-label="Đóng vòng quay">×</button>
+    </div>
+    <div class="picker-body">
+      <div class="picker-controls" aria-label="Lọc địa điểm cho vòng quay">
+        <label>Danh mục
+          <select id="picker-category">
+            <option value="all">Tất cả danh mục</option>
+            <option value="restaurant">Quán ăn</option>
+            <option value="outing">Đi chơi</option>
+            <option value="snack">Ăn vặt</option>
+            <option value="cafe">Cafe</option>
+            <option value="matcha">Matcha Map</option>
+          </select>
+        </label>
+        <label>Khu vực
+          <select id="picker-district"><option value="">Mọi khu vực</option></select>
+        </label>
+        <div id="picker-food-controls" class="picker-food-controls" hidden>
+          <label>Trạng thái
+            <select id="picker-status">
+              <option value="all">Tất cả</option>
+              <option value="want_to_try">Chưa thử</option>
+              <option value="eaten">Đã ăn</option>
+            </select>
+          </label>
+          <label>Mức chi
+            <select id="picker-price">
+              <option value="">Tất cả mức chi</option>
+              <option value="Ăn giàu">Ăn giàu</option>
+              <option value="Ăn vừa túi">Ăn vừa túi</option>
+              <option value="Ăn nghèo">Ăn nghèo</option>
+            </select>
+          </label>
+          <label>Kiểu ăn
+            <select id="picker-style">
+              <option value="">Tất cả kiểu ăn</option>
+              <option value="Ăn nhẹ">Ăn nhẹ</option>
+              <option value="Ăn no">Ăn no</option>
+              <option value="Ăn nhậu">Ăn nhậu</option>
+              <option value="Buffet">Buffet</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <p id="picker-count" class="picker-count" aria-live="polite">Đang chuẩn bị vòng quay…</p>
+      <div class="picker-stage">
+        <div class="picker-pointer" aria-hidden="true"></div>
+        <div id="picker-wheel" class="picker-wheel" role="img" aria-label="Vòng quay chọn địa điểm"></div>
+        <span class="picker-hub" aria-hidden="true">E.</span>
+      </div>
+      <button id="picker-spin" class="btn picker-spin" type="button" disabled>🎲 Quay ngay!</button>
+      <section id="picker-result" class="picker-result" aria-live="polite" hidden>
+        <p class="picker-result-caption">🎉 ĐIỂM ĐẾN CỦA BẠN</p>
+        <h3 id="picker-result-name"></h3>
+        <p id="picker-result-meta"></p>
+        <div class="picker-result-actions">
+          <button id="picker-view" class="btn btn-primary" type="button">Xem trang ghi</button>
+          <a id="picker-directions" class="btn btn-soft" target="_blank" rel="noopener noreferrer">Mở Google Maps ↗</a>
+        </div>
+      </section>
+    </div>
+  </dialog>
 
   <dialog id="entry-modal" class="entry-dialog paper" aria-labelledby="modal-title">
     <div class="modal-heading"><div><p id="modal-eyebrow" class="eyebrow">GHI THÊM MỘT CHỖ</p><h2 id="modal-title">Thêm quán mới</h2></div><button id="modal-close" class="icon-btn close-btn" type="button" aria-label="Đóng">×</button></div>
